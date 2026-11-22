@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#12202f"/>
+  <!-- tai -->
+  <path d="M120 230 L150 70 L240 175 Z" fill="#5b6b7c"/>
+  <path d="M392 230 L362 70 L272 175 Z" fill="#5b6b7c"/>
+  <path d="M148 205 L160 115 L215 178 Z" fill="#f2c9c0"/>
+  <path d="M364 205 L352 115 L297 178 Z" fill="#f2c9c0"/>
+  <!-- đầu -->
+  <path d="M256 150 C340 150 410 210 410 300 C410 380 340 440 256 440 C172 440 102 380 102 300 C102 210 172 150 256 150 Z" fill="#5b6b7c"/>
+  <!-- mặt trắng kiểu husky -->
+  <path d="M256 190 C236 230 200 245 160 262 C150 300 160 360 200 400 C225 425 287 425 312 400 C352 360 362 300 352 262 C312 245 276 230 256 190 Z" fill="#f4f6f8"/>
+  <!-- mắt xanh -->
+  <ellipse cx="205" cy="292" rx="20" ry="17" fill="#3fb6ff"/>
+  <ellipse cx="307" cy="292" rx="20" ry="17" fill="#3fb6ff"/>
+  <circle cx="208" cy="292" r="8" fill="#0c1a26"/>
+  <circle cx="310" cy="292" r="8" fill="#0c1a26"/>
+  <circle cx="212" cy="287" r="3" fill="#fff"/>
+  <circle cx="314" cy="287" r="3" fill="#fff"/>
+  <!-- mũi miệng -->
+  <path d="M232 345 Q256 330 280 345 Q268 368 256 368 Q244 368 232 345 Z" fill="#0c1a26"/>
+  <path d="M256 368 L256 385 M256 385 Q240 398 226 390 M256 385 Q272 398 286 390" stroke="#0c1a26" stroke-width="7" fill="none" stroke-linecap="round"/>
+</svg>

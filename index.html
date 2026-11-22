@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b141d">
+<title>VTA Hub</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root {
+    --bg:#0b141d; --panel:#111e2a; --panel2:#162736; --line:#20364a; --text:#e6edf3; --mute:#8ca0b3;
+    --claude:#e8916a; --gemini:#6aa8ff; --gpt:#5fd3a5; --me:#2a4258; --accent:#3fb6ff;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  button,input,select,textarea { font:inherit; color:inherit; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:9px 14px; background:var(--panel2); }
+  button.primary { background:var(--accent); color:#04121d; font-weight:600; }
+  button.ghost { background:transparent; color:var(--mute); padding:6px 10px; }
+  input,select,textarea { width:100%; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  textarea { resize:vertical; min-height:44px; }
+  .app { display:grid; grid-template-columns:320px 1fr; height:100dvh; }
+  header.top { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); }
+  header.top img { width:34px; height:34px; border-radius:9px; }
+  header.top b { font-size:17px; } header.top small { color:var(--mute); display:block; font-size:12px; margin-top:-2px; }
+  header.top .sp { flex:1; }
+  aside { background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
+  .team { display:flex; gap:6px; padding:10px 14px; flex-wrap:wrap; border-bottom:1px solid var(--line); }
+  .chip { font-size:12px; padding:3px 9px; border-radius:99px; background:var(--panel2); display:flex; gap:5px; align-items:center; }
+  .dot { width:8px; height:8px; border-radius:50%; }
+  .list { overflow:auto; flex:1; }
+  .item { padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .item:hover,.item.on { background:var(--panel2); }
+  .item .t { font-weight:600; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .item .m { font-size:12px; color:var(--mute); margin-top:3px; display:flex; gap:8px; align-items:center; }
+  .badge { font-size:11px; padding:1px 7px; border-radius:99px; border:1px solid currentColor; }
+  main { display:flex; flex-direction:column; min-height:0; }
+  .thread { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px; }
+  .msg { max-width:760px; padding:11px 14px; border-radius:14px; background:var(--panel); border-left:3px solid var(--line); word-wrap:break-word; }
+  .msg.me { align-self:flex-end; background:var(--me); border-left:0; border-right:3px solid var(--accent); }
+  .msg.claude { border-left-color:var(--claude); } .msg.gemini { border-left-color:var(--gemini); } .msg.gpt { border-left-color:var(--gpt); }
+  .msg .who { font-size:12px; font-weight:700; margin-bottom:4px; }
+  .msg.claude .who { color:var(--claude); } .msg.gemini .who { color:var(--gemini); } .msg.gpt .who { color:var(--gpt); } .msg.me .who { color:var(--accent); }
+  .msg .when { font-weight:400; color:var(--mute); margin-left:6px; }
+  .msg pre { background:var(--bg); padding:10px; border-radius:8px; overflow:auto; font-size:13px; }
+  .msg code { background:var(--bg); padding:1px 5px; border-radius:5px; font-size:13px; }
+  .msg a { color:var(--accent); }
+  .composer { display:flex; gap:8px; padding:12px; border-top:1px solid var(--line); background:var(--panel); }
+  .composer textarea { flex:1; }
+  .empty { margin:auto; text-align:center; color:var(--mute); padding:30px; }
+  .empty img { width:96px; opacity:.9; }
+  .bar { display:flex; gap:8px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); }
+  .bar h2 { font-size:16px; margin:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .back { display:none; }
+  dialog { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:16px; width:min(520px,94vw); padding:18px; }
+  dialog::backdrop { background:#000a; }
+  dialog h3 { margin:0 0 12px; }
+  dialog label { display:block; font-size:13px; color:var(--mute); margin:10px 0 4px; }
+  dialog .row { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+  .seg { display:flex; gap:6px; } .seg button { flex:1; } .seg button.on { background:var(--accent); color:#04121d; font-weight:600; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--panel2); padding:10px 16px; border-radius:10px; border:1px solid var(--line); display:none; z-index:9; }
+  .typing { color:var(--mute); font-size:13px; align-self:flex-start; }
+  @media (max-width:760px) {
+    .app { grid-template-columns:1fr; }
+    .app.open aside { display:none; } .app:not(.open) main { display:none; }
+    .back { display:inline-block; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside>
+    <header class="top">
+      <img src="icon.svg" alt="">
+      <div><b>VTA Hub</b><small>Lynda điều phối nhóm AI</small></div>
+      <span class="sp"></span>
+      <button class="ghost" onclick="openSettings()" title="Cài đặt">⚙️</button>
+    </header>
+    <div class="team">
+      <span class="chip"><span class="dot" style="background:var(--claude)"></span>Lynda · Claude</span>
+      <span class="chip"><span class="dot" style="background:var(--gemini)"></span>Gemini</span>
+      <span class="chip" style="opacity:.5"><span class="dot" style="background:var(--gpt)"></span>GPT · sắp có</span>
+    </div>
+    <div style="padding:10px 14px; display:flex; gap:8px">
+      <button class="primary" style="flex:1" onclick="openNew()">＋ Giao việc</button>
+      <button onclick="poke()" title="Bảo hệ thống xem Gemini ngay">🔄</button>
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+  <main>
+    <div class="bar">
+      <button class="ghost back" onclick="closeThread()">←</button>
+      <h2 id="title">Chọn một việc</h2>
+      <button class="ghost" id="openGh" onclick="openOnGithub()" title="Mở trên GitHub">↗</button>
+      <button class="ghost" id="closeBtn" onclick="closeIssue()">Xong ✓</button>
+    </div>
+    <div class="thread" id="thread">
+      <div class="empty"><img src="icon.svg" alt=""><p>Anh giao việc đi, em chia cho tụi nó làm.</p></div>
+    </div>
+    <div class="composer">
+      <textarea id="reply" rows="1" placeholder="Nhắn cho Lynda…"></textarea>
+      <button class="primary" onclick="sendReply()">Gửi</button>
+    </div>
+  </main>
+</div>
+
+<dialog id="dlgSettings">
+  <h3>Cài đặt</h3>
+  <label>GitHub token (fine-grained, quyền Issues + Actions của repo văn phòng)</label>
+  <input id="sToken" type="password" placeholder="github_pat_…">
+  <label>Repo văn phòng</label>
+  <input id="sRepo" placeholder="Thaianh111/vta-office">
+  <p style="font-size:12px;color:var(--mute)">Token chỉ lưu trong trình duyệt của máy này.</p>
+  <div class="row"><button onclick="dlgSettings.close()">Đóng</button><button class="primary" onclick="saveSettings()">Lưu</button></div>
+</dialog>
+
+<dialog id="dlgNew">
+  <h3>Giao việc cho Lynda</h3>
+  <div class="seg" id="mode">
+    <button class="on" data-m="task" onclick="setMode(this)">🛠️ Giao việc</button>
+    <button data-m="meet" onclick="setMode(this)">🗣️ Họp bàn</button>
+  </div>
+  <label>Dự án</label>
+  <select id="nProject"><option value="">(Lynda tự chọn)</option></select>
+  <label>Tiêu đề</label>
+  <input id="nTitle" placeholder="VD: Thêm màn 11 cho Lu Troll">
+  <label>Chi tiết</label>
+  <textarea id="nBody" rows="5" placeholder="Muốn gì, giao cho ai (nếu anh muốn chỉ định)…"></textarea>
+  <div class="row"><button onclick="dlgNew.close()">Huỷ</button><button class="primary" onclick="createTask()">Giao</button></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d = "") { try { return localStorage.getItem("vta." + k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("vta." + k, v); } catch {} },
+};
+let cfg = { token: store.get("token"), repo: store.get("repo", "Thaianh111/vta-office") };
+let issues = [], current = null, mode = "task", projects = {};
+
+function toast(t) { const el = $("toast"); el.textContent = t; el.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => el.style.display = "none", 2600); }
+
+async function gh(path, opts = {}) {
+  if (!cfg.token) { openSettings(); throw new Error("Chưa có token"); }
+  const res = await fetch("https://api.github.com" + path, {
+    ...opts,
+    headers: { Authorization: "Bearer " + cfg.token, Accept: "application/vnd.github+json", ...(opts.headers || {}) },
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(res.status + " " + t.slice(0, 160)); }
+  return res.status === 204 ? null : res.json();
+}
+
+// ---- nhận diện ai nói ----
+function whoOf(body, isBot) {
+  const b = (body || "").trimStart();
+  if (b.startsWith("🐺")) return ["claude", "Lynda · Claude"];
+  if (b.startsWith("💎")) return ["gemini", "Gemini"];
+  if (b.startsWith("🤖")) return ["gpt", "GPT"];
+  if (isBot) return ["claude", "Hệ thống"];
+  return ["me", "Anh"];
+}
+function stripMarks(s) { return (s || "").replace(/<!--[\s\S]*?-->/g, "").replace(/^(🐺|💎|🤖)\s*\*\*[^*]+\*\*\s*[—-]?\s*/u, "").trim(); }
+function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c])); }
+function md(s) {
+  const blocks = [];
+  s = s.replace(/```[\w-]*\n?([\s\S]*?)```/g, (_, c) => { blocks.push(c); return `\u0000${blocks.length - 1}\u0000`; });
+  s = esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+    .replace(/\n/g, "<br>");
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<pre>${esc(blocks[i])}</pre>`);
+}
+const when = (t) => new Date(t).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+
+// ---- danh sách việc ----
+async function loadList() {
+  try {
+    const fresh = await gh(`/repos/${cfg.repo}/issues?labels=vta-task&state=all&per_page=40&sort=updated`);
+    // lấy bình luận cuối của 10 việc đang mở để hiện trạng thái
+    await Promise.all(fresh.filter((i) => i.state === "open" && i.comments > 0).slice(0, 10).map(async (i) => {
+      const old = issues.find((x) => x.number === i.number);
+      if (old && old.updated_at === i.updated_at && old._last) { i._last = old._last; return; }
+      const c = await gh(`/repos/${cfg.repo}/issues/${i.number}/comments?per_page=1&page=${i.comments}`).catch(() => []);
+      i._last = c[0];
+    }));
+    issues = fresh;
+    renderList();
+  } catch (e) { $("list").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function statusOf(i) {
+  if (i.state === "closed") return ["Xong", "var(--mute)"];
+  const c = i._last;
+  if (!c) return ["Lynda đang đọc", "var(--claude)"];
+  const [k] = whoOf(c.body, c.user?.type === "Bot");
+  if (k === "me") return ["Lynda đang làm", "var(--claude)"];
+  if (/vta:(assign|update) /.test(c.body) && !/vta:done/.test(c.body)) return ["Gemini đang làm", "var(--gemini)"];
+  if (k === "gemini") return ["Lynda đang chấm", "var(--claude)"];
+  return ["Chờ anh", "var(--accent)"];
+}
+function renderList() {
+  $("list").innerHTML = issues.length ? issues.map((i) => {
+    const [st, col] = statusOf(i);
+    return `<div class="item ${current?.number === i.number ? "on" : ""}" onclick="openThread(${i.number})">
+      <div class="t">${esc(i.title)}</div>
+      <div class="m"><span class="badge" style="color:${col}">${st}</span>#${i.number} · ${when(i.updated_at)}</div></div>`;
+  }).join("") : `<div class="empty">Chưa có việc nào.</div>`;
+}
+
+// ---- một việc ----
+async function openThread(n) {
+  current = issues.find((i) => i.number === n) || { number: n };
+  $("app").classList.add("open");
+  $("title").textContent = current.title || "#" + n;
+  renderList();
+  await loadThread();
+}
+function closeThread() { $("app").classList.remove("open"); current = null; renderList(); }
+async function loadThread() {
+  if (!current) return;
+  const n = current.number;
+  const [issue, comments] = await Promise.all([
+    gh(`/repos/${cfg.repo}/issues/${n}`),
+    gh(`/repos/${cfg.repo}/issues/${n}/comments?per_page=100`),
+  ]);
+  if (current?.number !== n) return;
+  current = issue; current._last = comments[comments.length - 1];
+  const i = issues.find((x) => x.number === n); if (i) i._last = current._last;
+  const all = [{ body: issue.body, user: issue.user, created_at: issue.created_at }, ...comments];
+  const el = $("thread"), atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  el.innerHTML = all.map((c) => {
+    const [k, name] = whoOf(c.body, c.user?.type === "Bot");
+    const text = stripMarks(c.body);
+    if (!text) return "";
+    return `<div class="msg ${k}"><div class="who">${name}<span class="when">${when(c.created_at)}</span></div>${md(text)}</div>`;
+  }).join("");
+  const [st] = statusOf(current);
+  if (current.state === "open" && st !== "Chờ anh") el.insertAdjacentHTML("beforeend", `<div class="typing">… ${st}</div>`);
+  if (atBottom) el.scrollTop = el.scrollHeight;
+  $("closeBtn").textContent = current.state === "open" ? "Xong ✓" : "Mở lại";
+  renderList();
+}
+async function sendReply() {
+  const t = $("reply").value.trim(); if (!t || !current) return;
+  $("reply").value = "";
+  try { await gh(`/repos/${cfg.repo}/issues/${current.number}/comments`, { method: "POST", body: JSON.stringify({ body: t }) }); toast("Đã gửi cho Lynda"); loadThread(); }
+  catch (e) { toast(e.message); $("reply").value = t; }
+}
+async function closeIssue() {
+  if (!current) return;
+  const state = current.state === "open" ? "closed" : "open";
+  await gh(`/repos/${cfg.repo}/issues/${current.number}`, { method: "PATCH", body: JSON.stringify({ state }) });
+  loadThread(); loadList();
+}
+function openOnGithub() { if (current?.html_url) window.open(current.html_url, "_blank"); }
+
+// ---- giao việc ----
+async function loadProjects() {
+  try {
+    const f = await gh(`/repos/${cfg.repo}/contents/vta-config.json`);
+    projects = JSON.parse(decodeURIComponent(escape(atob(f.content.replace(/\n/g, ""))))).projects || {};
+    $("nProject").innerHTML = `<option value="">(Lynda tự chọn)</option>` +
+      Object.keys(projects).map((p) => `<option>${esc(p)}</option>`).join("");
+  } catch {}
+}
+function setMode(b) { mode = b.dataset.m; document.querySelectorAll("#mode button").forEach((x) => x.classList.toggle("on", x === b)); }
+function openNew() { if (!cfg.token) return openSettings(); dlgNew.showModal(); }
+async function createTask() {
+  const title = $("nTitle").value.trim(); if (!title) return toast("Anh ghi tiêu đề nha");
+  const p = $("nProject").value;
+  const body = [p ? `**Dự án:** ${p} (${projects[p]})` : "", $("nBody").value.trim()].filter(Boolean).join("\n\n");
+  try {
+    const i = await gh(`/repos/${cfg.repo}/issues`, { method: "POST",
+      body: JSON.stringify({ title: (mode === "meet" ? "[Họp] " : "") + title, body: body || "(không có chi tiết)", labels: ["vta-task"] }) });
+    dlgNew.close(); $("nTitle").value = $("nBody").value = "";
+    toast("Đã giao — Lynda đang đọc");
+    await loadList(); openThread(i.number);
+  } catch (e) { toast(e.message); }
+}
+async function poke() {
+  try { await gh(`/repos/${cfg.repo}/actions/workflows/vta-hub.yml/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main" }) }); toast("Đã nhắc hệ thống xem Gemini"); }
+  catch (e) { toast(e.message); }
+}
+
+// ---- cài đặt ----
+function openSettings() { $("sToken").value = cfg.token; $("sRepo").value = cfg.repo; dlgSettings.showModal(); }
+function saveSettings() {
+  cfg.token = $("sToken").value.trim(); cfg.repo = $("sRepo").value.trim() || cfg.repo;
+  store.set("token", cfg.token); store.set("repo", cfg.repo);
+  dlgSettings.close(); boot();
+}
+
+$("reply").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendReply(); });
+function boot() { if (!cfg.token) return openSettings(); loadList(); loadProjects(); }
+setInterval(() => { if (!document.hidden && cfg.token) loadThread(); }, 20000);
+setInterval(() => { if (!document.hidden && cfg.token) loadList(); }, 45000);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+boot();
+</script>
+</body>
+</html>

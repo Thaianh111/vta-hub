@@ -1,0 +1,10 @@
+{
+  "name": "VTA Hub",
+  "short_name": "VTA Hub",
+  "description": "Lynda (Claude) điều phối Gemini và GPT — VTA Studio",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b141d",
+  "theme_color": "#0b141d",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
