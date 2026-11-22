@@ -81,12 +81,12 @@
     </header>
     <div class="team">
       <span class="chip"><span class="dot" style="background:var(--claude)"></span>Lynda · Claude</span>
-      <span class="chip"><span class="dot" style="background:var(--gemini)"></span>Gemini</span>
+      <span class="chip"><span class="dot" style="background:var(--gemini)"></span>Gemini · Antigravity</span>
       <span class="chip" style="opacity:.5"><span class="dot" style="background:var(--gpt)"></span>GPT · sắp có</span>
     </div>
     <div style="padding:10px 14px; display:flex; gap:8px">
       <button class="primary" style="flex:1" onclick="openNew()">＋ Giao việc</button>
-      <button onclick="poke()" title="Bảo hệ thống xem Gemini ngay">🔄</button>
+      <button onclick="poke()" title="Làm mới">🔄</button>
     </div>
     <div class="list" id="list"></div>
   </aside>
@@ -109,7 +109,7 @@
 
 <dialog id="dlgSettings">
   <h3>Cài đặt</h3>
-  <label>GitHub token (fine-grained, quyền Issues + Actions của repo văn phòng)</label>
+  <label>GitHub token (fine-grained, Issues ghi, Actions đọc — repo văn phòng)</label>
   <input id="sToken" type="password" placeholder="github_pat_…">
   <label>Repo văn phòng</label>
   <input id="sRepo" placeholder="Thaianh111/vta-office">
@@ -141,7 +141,7 @@ const store = {
   set(k, v) { try { localStorage.setItem("vta." + k, v); } catch {} },
 };
 let cfg = { token: store.get("token"), repo: store.get("repo", "Thaianh111/vta-office") };
-let issues = [], current = null, mode = "task", projects = {};
+let issues = [], running = new Set(), current = null, mode = "task", projects = {};
 
 function toast(t) { const el = $("toast"); el.textContent = t; el.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => el.style.display = "none", 2600); }
 
@@ -182,7 +182,11 @@ const when = (t) => new Date(t).toLocaleString("vi-VN", { hour: "2-digit", minut
 // ---- danh sách việc ----
 async function loadList() {
   try {
-    const fresh = await gh(`/repos/${cfg.repo}/issues?labels=vta-task&state=all&per_page=40&sort=updated`);
+    const [fresh, runs] = await Promise.all([
+      gh(`/repos/${cfg.repo}/issues?labels=vta-task&state=all&per_page=40&sort=updated`),
+      gh(`/repos/${cfg.repo}/actions/runs?per_page=30`).catch(() => ({ workflow_runs: [] })),
+    ]);
+    running = new Set((runs.workflow_runs || []).filter((r) => r.status !== "completed").map((r) => r.display_title));
     // lấy bình luận cuối của 10 việc đang mở để hiện trạng thái
     await Promise.all(fresh.filter((i) => i.state === "open" && i.comments > 0).slice(0, 10).map(async (i) => {
       const old = issues.find((x) => x.number === i.number);
@@ -196,13 +200,10 @@ async function loadList() {
 }
 function statusOf(i) {
   if (i.state === "closed") return ["Xong", "var(--mute)"];
+  if (!running.has(i.title)) return ["Chờ anh", "var(--accent)"];
   const c = i._last;
-  if (!c) return ["Lynda đang đọc", "var(--claude)"];
-  const [k] = whoOf(c.body, c.user?.type === "Bot");
-  if (k === "me") return ["Lynda đang làm", "var(--claude)"];
-  if (/vta:(assign|update) /.test(c.body) && !/vta:done/.test(c.body)) return ["Gemini đang làm", "var(--gemini)"];
-  if (k === "gemini") return ["Lynda đang chấm", "var(--claude)"];
-  return ["Chờ anh", "var(--accent)"];
+  if (c && whoOf(c.body, c.user?.type === "Bot")[0] === "gemini") return ["Gemini đang làm", "var(--gemini)"];
+  return ["Lynda đang làm", "var(--claude)"];
 }
 function renderList() {
   $("list").innerHTML = issues.length ? issues.map((i) => {
@@ -283,10 +284,7 @@ async function createTask() {
     await loadList(); openThread(i.number);
   } catch (e) { toast(e.message); }
 }
-async function poke() {
-  try { await gh(`/repos/${cfg.repo}/actions/workflows/vta-hub.yml/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main" }) }); toast("Đã nhắc hệ thống xem Gemini"); }
-  catch (e) { toast(e.message); }
-}
+async function poke() { await loadList(); await loadThread(); toast("Đã làm mới"); }
 
 // ---- cài đặt ----
 function openSettings() { $("sToken").value = cfg.token; $("sRepo").value = cfg.repo; dlgSettings.showModal(); }
